@@ -6,6 +6,7 @@
 // @author       Nisus Liu
 // @match        *://cuiqingcai.com/*
 // @match        *://juejin.cn/*
+// @match        *://zhuanlan.zhihu.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=greasyfork.org
 // @grant        none
 // @require      https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/limonte-sweetalert2/11.4.4/sweetalert2.all.min.js
@@ -37,7 +38,14 @@
     $tmToc.appendTo("body");
     hs.forEach(h => {
       // 这里需要克隆节点, 否则就是'移动'的效果了
-      $tmToc.append(h.cloneNode(true));
+      let tocH  = h.cloneNode(true);
+      let tocHName = tocH.tagName;
+      let lvl = parseInt(tocHName.substring(1));
+      $(tocH).addClass(`TM-AEAT-toc-header-${lvl}`);
+      if (lvl > 1) {
+        tocH.style.cssText += [`text-indent:${lvl - 1}em`]
+      }
+      $tmToc.append(tocH);
     })
 
     hasExtracted = true;
@@ -76,27 +84,43 @@
     //追加文本节点, 文本节点里内容就是 css 样式长字符串
     domStyle.appendChild(document.createTextNode(`
 .TM-AEAT-toc {
-    position: absolute;
-    top: 0;
-    z-index: 10000;
-    font-size: 16px;
-    width: 10vw;
+  position: fixed;
+  top: 40px;
+  z-index: 10000;
+  font-size: 16px;
+  width: 10vw;
 }
 .TM-AEAT-toc-btn {
-    position: fixed;
-    top: 60px;
-    left: 20px;
-    z-index: 20000;
-    border: none;
-    outline: none;
-    background-color: red;
-    color: white;
-    cursor: pointer;
-    padding: 15px;
-    border-radius: 50%;
-    opacity:0.5;
-  }
-
+  position: fixed;
+  bottom: 40px;
+  left: 20px;
+  z-index: 20000;
+  border: none;
+  outline: none;
+  background-color: red;
+  color: white;
+  cursor: pointer;
+  padding: 15px;
+  border-radius: 50%;
+  opacity:0.5;
+}
+.TM-AEAT-toc-header-1::marker {
+  content: '1';
+}
+.TM-AEAT-toc-header-2::marker {
+  content: '2';
+}
+.TM-AEAT-toc-header-3::marker {
+  content: '3';
+}
+.TM-AEAT-toc-header-4::marker {
+  content: '4';
+}
+.TM-AEAT-toc-header-5::marker {
+  content: '5';
+}
+.TM-AEAT-toc-header-6::marker {
+  content: '6';
 }
     `));
     let domHead = document.getElementsByTagName('head')[0];
