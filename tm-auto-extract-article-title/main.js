@@ -7,22 +7,45 @@
 // @match        *://cuiqingcai.com/*
 // @match        *://juejin.cn/*
 // @match        *://zhuanlan.zhihu.com/*
+// @match        *://*.cnblogs.com/*
+// @match        *://*.notion.so/*
+// @match        *://segmentfault.com/*
+// @match        *://*.csdn.net/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=greasyfork.org
 // @grant        none
 // @require      https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/limonte-sweetalert2/11.4.4/sweetalert2.all.min.js
 // @require      https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js
 // ==/UserScript==
 
+
 (function () {
   'use strict';
-
   // Your code here...
-
   // console.log('[Auto Extract Article Title] script starting ...')
   // Swal.fire('傻子都会计算机')
-  let $tmToc;
+  console.log(`[Auto Extract Article Title] ${document.domain}`)
+
+  let $tmTocW = $("<div class='TM-AEAT-toc-w'></div>");
+
+
   let $tocTtn;
   let hasExtracted = false;
+  $tocTtn = $('<button class="TM-AEAT-toc-btn">抽取标题</button>');
+  $tocTtn.appendTo('body');
+  $tocTtn.on('click', function () {
+    if (!hasExtracted) {
+      extractToc();
+    } else {
+      removeToc();
+    }
+  })
+
+  const idGenerater = (() => {
+    let id = 0;
+    return function () {
+      return ++id;
+    }
+  })()
 
   /**
    * 抽取标题, 生成 TOC
@@ -34,47 +57,101 @@
     let hs = []
     $headers.each((ix, ele) => hs.push(ele))
     // console.log(hs)
-    $tmToc = $("<div class='TM-AEAT-toc'></div>");
-    $tmToc.appendTo("body");
+    let $tmToc = $("<div id='TM-AEAT-toc' class='TM-AEAT-toc'></div>");
+    $tmTocW.appendTo("body");
+    $tmTocW.append($tmToc);
+    let tmpLvls = [0, 0, 0, 0, 0, 0]; // 支持6级标题
     hs.forEach(h => {
+      // <p class="h2 TM-AEAT-toc-item"><span class="TM-AEAT-toc-item-seq">序号</span> 标题内容 </p>
+      let hTitle = h.innerText;
       // 这里需要克隆节点, 否则就是'移动'的效果了
-      let tocH  = h.cloneNode(true);
-      let tocHName = tocH.tagName;
+      // let tocH  = h.cloneNode(true);
+      let tocHName = h.tagName.toLowerCase();
       let lvl = parseInt(tocHName.substring(1));
-      $(tocH).addClass(`TM-AEAT-toc-header-${lvl}`);
-      if (lvl > 1) {
-        tocH.style.cssText += [`text-indent:${lvl - 1}em`]
+      let seq = '';
+      if (lvl >= 1 && lvl <= 6) {
+        tmpLvls[lvl - 1] += 1; // 当前级别的标题序号增 1
+        // 当前层级及之前的序号拼接起来就是需要的序号
+        seq = tmpLvls.slice(0, lvl).join('.');
       }
-      $tmToc.append(tocH);
+
+      let hId = h.getAttribute('id');
+      if (hId == null) {
+        hId = 'TM-AEAT-' + idGenerater();
+        h.setAttribute('id', hId);
+      }
+
+      let $tocItem = $(`<p class="${tocHName} TM-AEAT-toc-item"><span class="TM-AEAT-toc-item-seq">${seq}</span><a href="#${hId}">${hTitle}</a></p>`);
+      // $(tocH).addClass(`TM-AEAT-toc-header-${lvl}`);
+      if (lvl > 1) {
+        $tocItem.css("text-indent", `${lvl - 1}em`);
+      }
+      $tmToc.append($tocItem);
     })
 
     hasExtracted = true;
     $tocTtn.text('取消抽取');
     $tocTtn.addClass('extracted');
+
+    listenDrag();
   }
 
   /**
    * 溢出 TOC
    */
   function removeToc() {
-    $tmToc.remove();
+    $tmTocW.empty();
+    $tmTocW.remove();
     $tocTtn.text('抽取标题');
     $tocTtn.removeClass('extracted');
     hasExtracted = false;
   }
 
-  $tocTtn = $('<button class="TM-AEAT-toc-btn">抽取标题</button>');
-  $tocTtn.appendTo('body');
-  $tocTtn.on('click', function () {
-    if (!hasExtracted) {
-      extractToc();
-    } else {
-      removeToc();
-    }
-  })
-
   setCustomStyle();
 
+  function listenDrag() {
+    // 拖拽能力
+    // 鼠标的当前位置
+    let x = 0;
+    let y = 0;
+
+    // 找到要拖拽的元素
+    const ele = document.getElementById('TM-AEAT-toc');
+
+    // 处理鼠标按下事件
+    // 用户拖拽时触发
+    const mouseDownHandler = function (e) {
+      // 获取到鼠标位置
+      x = e.clientX;
+      y = e.clientY;
+
+      // 对document增加监听鼠标移动事件和鼠标松开事件
+      document.addEventListener('mousemove', mouseMoveHandler);
+      document.addEventListener('mouseup', mouseUpHandler);
+    };
+
+    const mouseMoveHandler = function (e) {
+      // 鼠标移动的距离
+      const dx = e.clientX - x;
+      const dy = e.clientY - y;
+
+      // 设置元素的位置
+      ele.style.top = `${ele.offsetTop + dy}px`;
+      ele.style.left = `${ele.offsetLeft + dx}px`;
+
+      // 重新分配鼠标的坐标
+      x = e.clientX;
+      y = e.clientY;
+    };
+
+    const mouseUpHandler = function () {
+      // 取消对document对象的事件监听
+      document.removeEventListener('mousemove', mouseMoveHandler);
+      document.removeEventListener('mouseup', mouseUpHandler);
+    };
+
+    ele.addEventListener('mousedown', mouseDownHandler);
+  }
 
   function setCustomStyle() {
     //获取 style 节点
@@ -83,12 +160,18 @@
     domStyle.rel = 'stylesheet';
     //追加文本节点, 文本节点里内容就是 css 样式长字符串
     domStyle.appendChild(document.createTextNode(`
+.TM-AEAT-toc-w {
+  position:relative;
+}
 .TM-AEAT-toc {
+  background: #e8f3ffcc;
   position: fixed;
   top: 40px;
   z-index: 10000;
   font-size: 16px;
-  width: 10vw;
+  width: 20vw;
+  border-radius: 0.3em;
+  box-shadow: 0 0 10px #a2aab4cc;
 }
 .TM-AEAT-toc-btn {
   position: fixed;
@@ -104,23 +187,9 @@
   border-radius: 50%;
   opacity:0.5;
 }
-.TM-AEAT-toc-header-1::marker {
-  content: '1';
-}
-.TM-AEAT-toc-header-2::marker {
-  content: '2';
-}
-.TM-AEAT-toc-header-3::marker {
-  content: '3';
-}
-.TM-AEAT-toc-header-4::marker {
-  content: '4';
-}
-.TM-AEAT-toc-header-5::marker {
-  content: '5';
-}
-.TM-AEAT-toc-header-6::marker {
-  content: '6';
+.TM-AEAT-toc-item-seq {
+  color: #ff7f7f;
+  margin-right: .5em;
 }
     `));
     let domHead = document.getElementsByTagName('head')[0];
