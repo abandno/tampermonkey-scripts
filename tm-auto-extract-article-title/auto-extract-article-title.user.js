@@ -1,12 +1,15 @@
 // ==UserScript==
-// @name         自动抽取文章的标题(Auto Extract Article Title)
+// @name         自动抽取文章的标题|一键生成文章目录
+// @name:en      Auto Extract Article Title|Generate article table of contents with one click
 // @namespace    http://life666.top/
-// @version      0.1
-// @description  自动抽取文章的标题
+// @version      0.2
+// @description  自动抽取文章的标题, 生成目录树, 可跳转, 可拖拽
+// @description:en  Automatically extract the title of the article, generate table of content, jump, drag and drop
 // @author       Nisus Liu
+// @license      MIT
 // @match        *://cuiqingcai.com/*
 // @match        *://juejin.cn/*
-// @match        *://zhuanlan.zhihu.com/*
+// @match        *://*.zhihu.com/*
 // @match        *://*.cnblogs.com/*
 // @match        *://*.notion.so/*
 // @match        *://segmentfault.com/*
@@ -26,8 +29,6 @@
   console.log(`[Auto Extract Article Title] ${document.domain}`)
 
   let $tmTocW = $("<div class='TM-AEAT-toc-w'></div>");
-
-
   let $tocTtn;
   let hasExtracted = false;
   $tocTtn = $('<button class="TM-AEAT-toc-btn">抽取标题</button>');
